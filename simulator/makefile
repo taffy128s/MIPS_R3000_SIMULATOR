@@ -1,7 +1,7 @@
 CC = gcc -Wall
 SRCS = ./*.c
 
-main: SRC
+single_cycle: SRC
 	$(CC) -o $@ *.o
 
 SRC: $(SRCS)
