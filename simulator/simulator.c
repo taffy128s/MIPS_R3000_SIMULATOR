@@ -22,7 +22,7 @@
 #define lw 35
 #define lh 33
 #define lhu 37
-#define lb 32 // test
+#define lb 32
 #define lbu 36
 #define sw 43
 #define sh 41
@@ -270,7 +270,7 @@ void run() {
 				findRsRtRd(&rs, &rt, NULL, insPos);
 				if (opcode == addi) { 
 					findSignedImmediate(&immediate, insPos);
-					signRs = reg[rs] >> 31, signIm = immediate >> 15;
+					signRs = reg[rs] >> 31, signIm = immediate >> 31;
 					reg[rt] = reg[rs] + immediate;
 					signRt = reg[rt] >> 31;
 					if (signRs == signIm && signRs != signRt)
