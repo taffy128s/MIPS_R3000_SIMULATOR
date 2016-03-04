@@ -39,18 +39,24 @@
 #define jal 3
 #define halt 63
 
+// Warning: do not shift more than 31 bits.
 unsigned iImgLen, dImgLen, iImgLenResult, dImgLenResult;
-unsigned reg[32], PC, insPos;
+unsigned reg[32], PC;
 char *iImgBuffer, *dImgBuffer;
 char dMemory[1024], iMemory[1024];
+FILE *err, *snap;
 
 void dealWithDImg();
 void dealWithIImg();
+void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd, unsigned insPos);
+void findShamt(unsigned *shamt, unsigned insPos);
 void run();
 
 int main() {
 	FILE *iImg = fopen("iimage.bin", "rb");
 	FILE *dImg = fopen("dimage.bin", "rb");
+	err = fopen("error_dump.rpt", "wb");
+	snap = fopen("snapshot.rpt", "wb");
 	
 	// Load the files.
 	if (iImg == NULL || dImg == NULL)
@@ -117,14 +123,103 @@ void dealWithIImg() {
 		iMemory[idx++] = iImgBuffer[i];
 }
 
+void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd, unsigned insPos) {
+	// Deal with rs.
+	unsigned temp1 = iMemory[insPos], temp2 = iMemory[insPos + 1];
+	temp1 = temp1 << 30 >> 27;
+	temp2 = temp2 << 24 >> 29;
+	*rs = temp1 + temp2;
+	// Deal with rt.
+	*rt = iMemory[insPos + 1];
+	*rt = (*rt) << 27 >> 27; 
+	// Deal with rd.
+	*rd = iMemory[insPos + 2];
+	*rd = (*rd) << 24 >> 27;
+}
+
+void findShamt(unsigned *shamt, unsigned insPos) {
+	unsigned temp1 = iMemory[insPos + 2], temp2 = iMemory[insPos + 3];
+	temp1 = temp1 << 29 >> 27;
+	temp2 = temp2 >> 6 << 30 >> 30;
+	*shamt = temp1 + temp2;
+}
+
 void run() {
-	unsigned opcode = 0;
+	unsigned opcode, insPos = 0, cycle = 0;
 	// Deal with the first instruction.
-	opcode = iMemory[0];
+	opcode = iMemory[insPos];
 	opcode = opcode >> 2 << 26 >> 26;
-	// Loop while opcode != halt
+	// Loop while opcode != halt.
 	while (opcode != halt) {
-		opcode = iMemory[34 * 4];
+		// If opcode == R.
+		if (opcode == R) {
+			unsigned shamt, funct, rs, rt, rd, signRs, signRt, signRd;
+			int intRs, intRt, temp;
+			// Then load funct.
+			funct = iMemory[insPos + 3];
+			funct = funct << 26 >> 26;
+			// Find rs, rt, rd and then go on.
+			findRsRtRd(&rs, &rt, &rd, insPos);
+			switch (funct) {
+				// Instruction add with overflow detection.
+				case add:
+					signRs = reg[rs] >> 31, signRt = reg[rt] >> 31;
+					reg[rd] = reg[rs] + reg[rt];
+					signRd = reg[rd] >> 31;
+					if (signRs == signRt && signRs != signRd)
+						fprintf(err, "In cycle %d: Number Overflow\n", cycle);
+					break;
+				case addu:
+					reg[rd] = reg[rs] + reg[rt];
+					break;
+				case sub:
+					signRs = reg[rs] >> 31, signRt = (-reg[rt]) >> 31;
+					reg[rd] = reg[rs] - reg[rt];
+					signRd = reg[rd] >> 31;
+					if (signRs == signRt && signRs != signRd)
+						fprintf(err, "In cycle %d: Number Overflow\n", cycle);
+					break;
+				case and:
+					reg[rd] = reg[rs] & reg[rt];
+					break;
+				case or:
+					reg[rd] = reg[rs] | reg[rt];
+					break;
+				case xor:
+					reg[rd] = reg[rs] ^ reg[rt];
+					break;
+				case nor:
+					reg[rd] = ~(reg[rs] | reg[rt]);
+					break;
+				case nand:
+					reg[rd] = ~(reg[rs] & reg[rt]);
+					break;
+				case slt:
+					intRs = rs, intRt = rt;
+					reg[rd] = (intRs < intRt);
+					break;
+				case sll:
+					findShamt(&shamt, insPos);
+					reg[rd] = reg[rt] << shamt;
+					break;
+				case srl:
+					findShamt(&shamt, insPos);
+					reg[rd] = reg[rt] >> shamt;
+					break;
+				case sra:
+					findShamt(&shamt, insPos);
+					temp = reg[rt];
+					temp = temp >> shamt;
+					reg[rd] = temp;
+					break;
+				default:
+					PC = rs;
+					break;
+			}
+		}
+		insPos += 4;
+		opcode = iMemory[insPos];
 		opcode = opcode >> 2 << 26 >> 26;
+		cycle++;
 	}
 }
