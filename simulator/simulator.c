@@ -418,22 +418,8 @@ void dumpSnap() {
 	char temp;
 	for (i = 0; i < 32; i++) {
 		fprintf(snap, "$%02u: 0x", i);
-		temp = reg[i] >> 24;
-		fprintf(snap, "%02X", temp & 0xff);
-		temp = reg[i] << 8 >> 24;
-		fprintf(snap, "%02X", temp & 0xff);
-		temp = reg[i] << 16 >> 24;
-		fprintf(snap, "%02X", temp & 0xff);
-		temp = reg[i] << 24 >> 24;
-		fprintf(snap, "%02X\n", temp & 0xff);
+		fprintf(snap, "%08X\n", reg[i]);
 	}
 	fprintf(snap, "PC: 0x");
-	temp = (PC + insPos) >> 24;
-	fprintf(snap, "%02X", temp & 0xff);
-	temp = (PC + insPos) << 8 >> 24;
-	fprintf(snap, "%02X", temp & 0xff);
-	temp = (PC + insPos) << 16 >> 24;
-	fprintf(snap, "%02X", temp & 0xff);
-	temp = (PC + insPos) << 24 >> 24;
-	fprintf(snap, "%02X\n\n\n", temp & 0xff);
+	fprintf(snap, "%08X\n\n\n", PC + insPos);
 }
