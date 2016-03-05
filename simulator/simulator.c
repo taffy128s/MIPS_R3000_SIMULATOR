@@ -1,64 +1,75 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #define $sp 29
 // Define R's
 #define R 0
-#define add 32
-#define addu 33
-#define sub 34
-#define and 36
-#define or 37
-#define xor 38
-#define nor 39
-#define nand 40
-#define slt 42
-#define sll 0
-#define srl 2
-#define sra 3
-#define jr 8
+#define add 32   // used
+#define addu 33  // used
+#define sub 34   // used
+#define and 36   // used
+#define or 37    // used
+#define xor 38   // used
+#define nor 39   // used
+#define nand 40  // used
+#define slt 42   // used
+#define sll 0    // used
+#define srl 2    // used
+#define sra 3    // used
+#define jr 8     // used
 // Define others'
-#define addi 8
-#define addiu 9
-#define lw 35
-#define lh 33
-#define lhu 37
-#define lb 32
-#define lbu 36
-#define sw 43
-#define sh 41
-#define sb 40
-#define lui 15
-#define andi 12
-#define ori 13
-#define nori 14
-#define slti 10
-#define beq 4
-#define bne 5
-#define bgtz 7
-#define j 2
-#define jal 3
-#define halt 63
+#define addi 8   // used
+#define addiu 9  // used
+#define lw 35    // used
+#define lh 33    // used
+#define lhu 37   // used
+#define lb 32    // used
+#define lbu 36   // used
+#define sw 43    // used
+#define sh 41    // used
+#define sb 40    // used
+#define lui 15   // used
+#define andi 12  // used
+#define ori 13   // used
+#define nori 14  // used
+#define slti 10  // used
+#define beq 4    // used
+#define bne 5    // used
+#define bgtz 7   // used
+#define j 2      // used
+#define jal 3    // used
+#define halt 63  // used
 
 // Warning: do not shift more than 31 bits.
 unsigned iImgLen, dImgLen, iImgLenResult, dImgLenResult;
 unsigned reg[32], PC, cycle, insPos;
 char *iImgBuffer, *dImgBuffer;
 char dMemory[1024], iMemory[1024];
-FILE *err, *snap;
+FILE *err, *snap, *iImg, *dImg;
 
 void dealWithDImg();
 void dealWithIImg();
-void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd, unsigned insPos);
-void findShamt(unsigned *shamt, unsigned insPos);
-void findUnsignedImmediate(unsigned *immediate, unsigned insPos);
-void findSignedImmediate(unsigned *immediate, unsigned insPos);
+void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd);
+void findShamt(unsigned *shamt);
+void findUnsignedImmediate(unsigned *immediate);
+void findSignedImmediate(unsigned *immediate);
 void run();
 void dumpSnap();
+void openNLoadFiles();
 int tranPosByShortIm(unsigned *pos, unsigned short *shortIm, unsigned *rs);
 
 int main() {
-	FILE *iImg = fopen("iimage.bin", "rb");
-	FILE *dImg = fopen("dimage.bin", "rb");
+	openNLoadFiles();
+	dealWithDImg();
+	dealWithIImg();
+	run();
+	return 0;
+}
+
+void openNLoadFiles() {
+	// Open the files.
+	iImg = fopen("iimage.bin", "rb");
+	dImg = fopen("dimage.bin", "rb");
 	err = fopen("error_dump.rpt", "wb");
 	snap = fopen("snapshot.rpt", "wb");
 	
@@ -87,13 +98,6 @@ int main() {
 	
 	// Close the files.
 	fclose(iImg), fclose(dImg);
-	
-	// Execute the functions.
-	dealWithDImg();
-	dealWithIImg();
-	run();
-	
-	return 0;
 }
 
 void dealWithDImg() {
@@ -126,7 +130,7 @@ void dealWithIImg() {
 		iMemory[idx++] = iImgBuffer[i];
 }
 
-void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd, unsigned insPos) {
+void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd) {
 	// Deal with rs.
 	unsigned temp1 = iMemory[insPos], temp2 = iMemory[insPos + 1];
 	temp1 = temp1 << 30 >> 27;
@@ -141,21 +145,23 @@ void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd, unsigned insPos) {
 	*rd = (*rd) << 24 >> 27;
 }
 
-void findShamt(unsigned *shamt, unsigned insPos) {
+// Double check from here
+
+void findShamt(unsigned *shamt) {
 	unsigned temp1 = iMemory[insPos + 2], temp2 = iMemory[insPos + 3];
 	temp1 = temp1 << 29 >> 27;
 	temp2 = temp2 >> 6 << 30 >> 30;
 	*shamt = temp1 + temp2;
 }
 
-void findUnsignedImmediate(unsigned *immediate, unsigned insPos) {
+void findUnsignedImmediate(unsigned *immediate) {
 	unsigned temp1 = iMemory[insPos + 2], temp2 = iMemory[insPos + 3];
 	temp1 = temp1 << 24 >> 16;
 	temp2 = temp2 << 24 >> 24;
 	*immediate = temp1 + temp2;
 }
 
-void findSignedImmediate(unsigned *immediate, unsigned insPos) {
+void findSignedImmediate(unsigned *immediate) {
 	unsigned temp1 = iMemory[insPos + 2], temp2 = iMemory[insPos + 3];
 	temp1 = temp1 << 24 >> 16;
 	temp2 = temp2 << 24 >> 24;
@@ -213,7 +219,7 @@ void run() {
 				int intRs, intRt, temp;
 				funct = iMemory[insPos + 3];
 				funct = funct << 26 >> 26;
-				findRsRtRd(&rs, &rt, &rd, insPos);
+				findRsRtRd(&rs, &rt, &rd);
 				//printf("funct: %u\n\n", funct);
 				switch (funct) {
 					case add:
@@ -253,15 +259,15 @@ void run() {
 						reg[rd] = (intRs < intRt);
 						break;
 					case sll:
-						findShamt(&shamt, insPos);
+						findShamt(&shamt);
 						reg[rd] = reg[rt] << shamt;
 						break;
 					case srl:
-						findShamt(&shamt, insPos);
+						findShamt(&shamt);
 						reg[rd] = reg[rt] >> shamt;
 						break;
 					case sra:
-						findShamt(&shamt, insPos);
+						findShamt(&shamt);
 						temp = reg[rt];
 						temp = temp >> shamt;
 						reg[rd] = temp;
@@ -273,19 +279,19 @@ void run() {
 				}
 			} else {
 				unsigned rs, rt, immediate, signRs, signRt, signIm;
-				findRsRtRd(&rs, &rt, NULL, insPos);
+				findRsRtRd(&rs, &rt, NULL);
 				if (opcode == addi) { 
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					signRs = reg[rs] >> 31, signIm = immediate >> 31;
 					reg[rt] = reg[rs] + immediate;
 					signRt = reg[rt] >> 31;
 					if (signRs == signIm && signRs != signRt)
 						fprintf(err, "In cycle %d: Number Overflow\n", cycle);
 				} else if (opcode == addiu) {
-					findUnsignedImmediate(&immediate, insPos);
+					findUnsignedImmediate(&immediate);
 					reg[rt] = reg[rs] + immediate;
 				} else if (opcode == lw) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					if (immediate % 4) {
 						fprintf(err, "In cycle %d: Misalignment Error\n", cycle);
 						break;
@@ -303,7 +309,7 @@ void run() {
 						reg[rt] = temp1 + temp2 + temp3 + temp4;
 					}
 				} else if (opcode == lh) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					if (immediate % 2) {
 						fprintf(err, "In cycle %d: Misalignment Error\n", cycle);
 						break;
@@ -314,13 +320,14 @@ void run() {
 						break;
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
+						//printf("%u %u\n", rt, pos);
 						temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
 						temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
 						short temp3 = temp1 + temp2;
 						reg[rt] = temp3;
 					}
 				} else if (opcode == lhu) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					if (immediate % 2) {
 						fprintf(err, "In cycle %d: Misalignment Error\n", cycle);
 						break;
@@ -338,7 +345,7 @@ void run() {
 						reg[rt] = temp1 + temp2;
 					}
 				} else if (opcode == lb) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					unsigned pos;
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
@@ -346,27 +353,28 @@ void run() {
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos];
 				} else if (opcode == lbu) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					unsigned pos;
 					pos = reg[rs] + immediate;
 					if (pos >= 1024) {
 						fprintf(err, "In cycle %d: Address Overflow\n", cycle);
 						break;
-					}
+					} 
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
 				} else if (opcode == sw) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					unsigned pos;
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
 						break;
+					//printf("%u %u\n", rt, pos);
 					dMemory[pos] = reg[rt] >> 24;
 					dMemory[pos + 1] = reg[rt] << 8 >> 24;
 					dMemory[pos + 2] = reg[rt] << 16 >> 24;
 					dMemory[pos + 3] = reg[rt] << 24 >> 24;
 				} else if (opcode == sh) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					unsigned pos;
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
@@ -374,29 +382,30 @@ void run() {
 					dMemory[pos] = reg[rt] << 16 >> 24;
 					dMemory[pos + 1] = reg[rt] << 24 >> 24;
 				} else if (opcode == sb) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					unsigned pos;
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
 						break;
 					dMemory[pos] = reg[rt] << 24 >> 24;
 				} else if (opcode == lui) {
+					findUnsignedImmediate(&immediate);
 					reg[rt] = immediate << 16;
 				} else if (opcode == andi) {
-					findUnsignedImmediate(&immediate, insPos);
+					findUnsignedImmediate(&immediate);
 					reg[rt] = reg[rs] & immediate;
 				} else if (opcode == ori) {
-					findUnsignedImmediate(&immediate, insPos);
+					findUnsignedImmediate(&immediate);
 					reg[rt] = reg[rs] | immediate;
 				} else if (opcode == nori) {
-					findUnsignedImmediate(&immediate, insPos);
+					findUnsignedImmediate(&immediate);
 					reg[rt] = ~(reg[rs] | immediate);
 				} else if (opcode == slti) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					int intIm = immediate, intRs = reg[rs];
 					reg[rt] = (intRs < intIm);
 				} else if (opcode == beq) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					if (reg[rs] == reg[rt]) {
 						unsigned short shortIm = immediate;
 						shortIm = shortIm << 2;
@@ -404,7 +413,7 @@ void run() {
 						else insPos += shortIm;
 					}
 				} else if (opcode == bne) {
-					findSignedImmediate(&immediate, insPos);
+					findSignedImmediate(&immediate);
 					if (reg[rs] != reg[rt]) {
 						unsigned short shortIm = immediate;
 						shortIm = shortIm << 2;
@@ -412,8 +421,9 @@ void run() {
 						else insPos += shortIm;
 					}
 				} else if (opcode == bgtz) {
-					findSignedImmediate(&immediate, insPos);
-					if (reg[rs] > 0) {
+					findSignedImmediate(&immediate);
+					int temp = reg[rs];
+					if (temp > 0) {
 						unsigned short shortIm = immediate;
 						shortIm = shortIm << 2;
 						if (shortIm >> 15) insPos -= ~(shortIm - 1);
@@ -425,12 +435,11 @@ void run() {
 		insPos += 4;
 		opcode = iMemory[insPos];
 		opcode = opcode >> 2 << 26 >> 26;
-		++cycle;
 	}
 }
 
 void dumpSnap() {
-	fprintf(snap, "cycle %u\n", cycle);
+	fprintf(snap, "cycle %u\n", cycle++);
 	unsigned i;
 	for (i = 0; i < 32; ++i) {
 		fprintf(snap, "$%02u: 0x", i);
