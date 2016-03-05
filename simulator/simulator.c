@@ -182,7 +182,7 @@ void run() {
 	opcode = iMemory[insPos];
 	opcode = opcode >> 2 << 26 >> 26;
 	while (1) {
-		//printf("%u\n", opcode);
+		//printf("opcode: %u\n", opcode);
 		dumpSnap();
 		if (opcode == halt) {
 			break;
@@ -194,8 +194,10 @@ void run() {
 			temp4 = temp4 << 24 >> 24;
 			address = temp1 + temp2 + temp3 + temp4;
 			insPos = ((insPos + 4) >> 28 << 28) | (address << 2);
+			// -4 because there's a +4 at the end of this loop.
+			insPos -= PC + 4;
 		} else if (opcode == jal) {
-			reg[31] = insPos + 4;
+			reg[31] = insPos + PC + 4;
 			unsigned address, temp1 = iMemory[insPos], temp2 = iMemory[insPos + 1], temp3 = iMemory[insPos + 2], temp4 = iMemory[insPos + 3];
 			temp1 = temp1 << 30 >> 30;
 			temp2 = temp2 << 24 >> 24;
@@ -203,6 +205,8 @@ void run() {
 			temp4 = temp4 << 24 >> 24;
 			address = temp1 + temp2 + temp3 + temp4;
 			insPos = ((insPos + 4) >> 28 << 28) | (address << 2);
+			// -4 because there's a +4 at the end of this loop.
+			insPos -= PC + 4;
 		} else {
 			if (opcode == R) {
 				unsigned shamt, funct, rs, rt, rd, signRs, signRt, signRd;
@@ -210,6 +214,7 @@ void run() {
 				funct = iMemory[insPos + 3];
 				funct = funct << 26 >> 26;
 				findRsRtRd(&rs, &rt, &rd, insPos);
+				//printf("funct: %u\n\n", funct);
 				switch (funct) {
 					case add:
 						signRs = reg[rs] >> 31, signRt = reg[rt] >> 31;
@@ -262,7 +267,8 @@ void run() {
 						reg[rd] = temp;
 						break;
 					default:
-						PC = rs;
+						// -4 because there's a +4 at the end of this loop.
+						insPos = reg[rs] - PC - 4;
 						break;
 				}
 			} else {
@@ -288,11 +294,14 @@ void run() {
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
 						break;
-					temp1 = dMemory[pos], temp1 = temp1 << 24;
-					temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 8;
-					temp3 = dMemory[pos + 2], temp3 = temp3 << 24 >> 16;
-					temp4 = dMemory[pos + 3], temp4 = temp4 << 24 >> 24;
-					reg[rt] = temp1 + temp2 + temp3 + temp4;
+					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
+					else {
+						temp1 = dMemory[pos], temp1 = temp1 << 24;
+						temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 8;
+						temp3 = dMemory[pos + 2], temp3 = temp3 << 24 >> 16;
+						temp4 = dMemory[pos + 3], temp4 = temp4 << 24 >> 24;
+						reg[rt] = temp1 + temp2 + temp3 + temp4;
+					}
 				} else if (opcode == lh) {
 					findSignedImmediate(&immediate, insPos);
 					if (immediate % 2) {
@@ -303,10 +312,13 @@ void run() {
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
 						break;
-					temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
-					temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
-					short temp3 = temp1 + temp2;
-					reg[rt] = temp3;
+					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
+					else {
+						temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
+						temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
+						short temp3 = temp1 + temp2;
+						reg[rt] = temp3;
+					}
 				} else if (opcode == lhu) {
 					findSignedImmediate(&immediate, insPos);
 					if (immediate % 2) {
@@ -319,16 +331,20 @@ void run() {
 						fprintf(err, "In cycle %d: Address Overflow\n", cycle);
 						break;
 					}
-					temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
-					temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
-					reg[rt] = temp1 + temp2;
+					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
+					else {
+						temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
+						temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
+						reg[rt] = temp1 + temp2;
+					}
 				} else if (opcode == lb) {
 					findSignedImmediate(&immediate, insPos);
 					unsigned pos;
 					unsigned short shortIm = immediate;
 					if (tranPosByShortIm(&pos, &shortIm, &rs))
 						break;
-					reg[rt] = dMemory[pos];
+					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
+					else reg[rt] = dMemory[pos];
 				} else if (opcode == lbu) {
 					findSignedImmediate(&immediate, insPos);
 					unsigned pos;
@@ -337,7 +353,8 @@ void run() {
 						fprintf(err, "In cycle %d: Address Overflow\n", cycle);
 						break;
 					}
-					reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
+					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
+					else reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
 				} else if (opcode == sw) {
 					findSignedImmediate(&immediate, insPos);
 					unsigned pos;
@@ -408,15 +425,14 @@ void run() {
 		insPos += 4;
 		opcode = iMemory[insPos];
 		opcode = opcode >> 2 << 26 >> 26;
-		cycle++;
+		++cycle;
 	}
 }
 
 void dumpSnap() {
 	fprintf(snap, "cycle %u\n", cycle);
 	unsigned i;
-	char temp;
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 32; ++i) {
 		fprintf(snap, "$%02u: 0x", i);
 		fprintf(snap, "%08X\n", reg[i]);
 	}
