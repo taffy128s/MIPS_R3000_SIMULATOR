@@ -56,7 +56,7 @@ void findSignedImmediate(unsigned *immediate);
 void run();
 void dumpSnap();
 void openNLoadFiles();
-int findPosByImmediateWithMemOverflowDection(unsigned *pos, unsigned *immediate, unsigned *rs);
+int findPosByImmediateWithMemOverflowDetection(unsigned *pos, unsigned *immediate, unsigned *rs);
 
 int main() {
 	openNLoadFiles();
@@ -168,7 +168,7 @@ void findSignedImmediate(unsigned *immediate) {
 	*immediate = temp;
 }
 
-int findPosByImmediateWithMemOverflowDection(unsigned *pos, unsigned *immediate, unsigned *rs) {
+int findPosByImmediateWithMemOverflowDetection(unsigned *pos, unsigned *immediate, unsigned *rs) {
 	*pos = reg[*rs] + *immediate;
 	if (*pos >= 1024) {
 		fprintf(err, "In cycle %d: Address Overflow\n", cycle);
@@ -293,7 +293,7 @@ void run() {
 					}
 					unsigned temp1, temp2, temp3, temp4, pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
@@ -311,7 +311,7 @@ void run() {
 					}
 					unsigned temp1, temp2, pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
@@ -328,7 +328,7 @@ void run() {
 					}
 					unsigned temp1, temp2, pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
@@ -340,7 +340,7 @@ void run() {
 					findSignedImmediate(&immediate);
 					unsigned pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos];
@@ -348,7 +348,7 @@ void run() {
 					findSignedImmediate(&immediate);
 					unsigned pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
@@ -356,7 +356,7 @@ void run() {
 					findSignedImmediate(&immediate);
 					unsigned pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					dMemory[pos] = reg[rt] >> 24;
 					dMemory[pos + 1] = reg[rt] << 8 >> 24;
@@ -366,7 +366,7 @@ void run() {
 					findSignedImmediate(&immediate);
 					unsigned pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					dMemory[pos] = reg[rt] << 16 >> 24;
 					dMemory[pos + 1] = reg[rt] << 24 >> 24;
@@ -374,7 +374,7 @@ void run() {
 					findSignedImmediate(&immediate);
 					unsigned pos;
 					
-					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					if (findPosByImmediateWithMemOverflowDetection(&pos, &immediate, &rs)) break;
 					
 					dMemory[pos] = reg[rt] << 24 >> 24;
 				} else if (opcode == lui) {
