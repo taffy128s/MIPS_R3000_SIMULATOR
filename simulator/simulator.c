@@ -56,7 +56,7 @@ void findSignedImmediate(unsigned *immediate);
 void run();
 void dumpSnap();
 void openNLoadFiles();
-int tranPosByShortIm(unsigned *pos, unsigned short *shortIm, unsigned *rs);
+int findPosByImmediateWithMemOverflowDection(unsigned *pos, unsigned *immediate, unsigned *rs);
 
 int main() {
 	openNLoadFiles();
@@ -145,8 +145,6 @@ void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd) {
 	*rd = (*rd) << 24 >> 27;
 }
 
-// Double check from here
-
 void findShamt(unsigned *shamt) {
 	unsigned temp1 = iMemory[insPos + 2], temp2 = iMemory[insPos + 3];
 	temp1 = temp1 << 29 >> 27;
@@ -170,15 +168,12 @@ void findSignedImmediate(unsigned *immediate) {
 	*immediate = temp;
 }
 
-int tranPosByShortIm(unsigned *pos, unsigned short *shortIm, unsigned *rs) {
-	if (*shortIm >> 15) {
-		*shortIm = ~(*shortIm - 1);
-		*pos = reg[*rs] - *shortIm;
-	} else *pos = reg[*rs] + *shortIm;
+int findPosByImmediateWithMemOverflowDection(unsigned *pos, unsigned *immediate, unsigned *rs) {
+	*pos = reg[*rs] + *immediate;
 	if (*pos >= 1024) {
 		fprintf(err, "In cycle %d: Address Overflow\n", cycle);
 		return 1;
-	}
+	} 
 	return 0;
 }
 
@@ -297,9 +292,9 @@ void run() {
 						break;
 					}
 					unsigned temp1, temp2, temp3, temp4, pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
 						temp1 = dMemory[pos], temp1 = temp1 << 24;
@@ -315,12 +310,11 @@ void run() {
 						break;
 					}
 					unsigned temp1, temp2, pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
-						//printf("%u %u\n", rt, pos);
 						temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
 						temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
 						short temp3 = temp1 + temp2;
@@ -333,11 +327,9 @@ void run() {
 						break;
 					}
 					unsigned temp1, temp2, pos;
-					pos = reg[rs] + immediate;
-					if (pos >= 1024) {
-						fprintf(err, "In cycle %d: Address Overflow\n", cycle);
-						break;
-					}
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else {
 						temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
@@ -347,28 +339,25 @@ void run() {
 				} else if (opcode == lb) {
 					findSignedImmediate(&immediate);
 					unsigned pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos];
 				} else if (opcode == lbu) {
 					findSignedImmediate(&immediate);
 					unsigned pos;
-					pos = reg[rs] + immediate;
-					if (pos >= 1024) {
-						fprintf(err, "In cycle %d: Address Overflow\n", cycle);
-						break;
-					} 
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					if (rt == 0) fprintf(err, "In cycle %d: Write $0 Error\n", cycle);
 					else reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
 				} else if (opcode == sw) {
 					findSignedImmediate(&immediate);
 					unsigned pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
-					//printf("%u %u\n", rt, pos);
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					dMemory[pos] = reg[rt] >> 24;
 					dMemory[pos + 1] = reg[rt] << 8 >> 24;
 					dMemory[pos + 2] = reg[rt] << 16 >> 24;
@@ -376,17 +365,17 @@ void run() {
 				} else if (opcode == sh) {
 					findSignedImmediate(&immediate);
 					unsigned pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					dMemory[pos] = reg[rt] << 16 >> 24;
 					dMemory[pos + 1] = reg[rt] << 24 >> 24;
 				} else if (opcode == sb) {
 					findSignedImmediate(&immediate);
 					unsigned pos;
-					unsigned short shortIm = immediate;
-					if (tranPosByShortIm(&pos, &shortIm, &rs))
-						break;
+					
+					if (findPosByImmediateWithMemOverflowDection(&pos, &immediate, &rs)) break;
+					
 					dMemory[pos] = reg[rt] << 24 >> 24;
 				} else if (opcode == lui) {
 					findUnsignedImmediate(&immediate);
