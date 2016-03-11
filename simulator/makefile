@@ -4,10 +4,10 @@ OBS = ./*.o
 
 # The following line means that do SRC first.
 single_cycle: SRC
-	$(CC) -o $@ *.o
+	$(CC) -o $@ $(OBS)
 
 SRC: $(SRCS)
 	$(CC) -c $(SRCS)
 
 clean: $(OBS)
-	rm *.o single_cycle
+	rm $(OBS) single_cycle
