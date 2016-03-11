@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "defines.h"
 #include "decoder.h"
-#include "memory.h"
-#include "dump.h"
+#include "snapshot.h"
+#include "load.h"
 
 int findPosByImmediateWithMemOverflowDetection(unsigned *pos, unsigned *immediate, unsigned *rs) {
     *pos = reg[*rs] + *immediate;

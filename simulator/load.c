@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "load.h"
 
 unsigned iImgLen, dImgLen, iImgLenResult, dImgLenResult;
 unsigned reg[32], PC, cycle, insPos;

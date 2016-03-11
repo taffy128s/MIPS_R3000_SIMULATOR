@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "load.h"
 #include "decoder.h"
 
 void findRsRtRd(unsigned *rs, unsigned *rt, unsigned *rd) {

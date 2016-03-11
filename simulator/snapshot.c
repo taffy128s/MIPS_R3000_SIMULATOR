@@ -1,5 +1,5 @@
-#include "memory.h"
-#include "dump.h"
+#include "load.h"
+#include "snapshot.h"
 
 void dumpSnap() {
     fprintf(snap, "cycle %u\n", cycle++);
