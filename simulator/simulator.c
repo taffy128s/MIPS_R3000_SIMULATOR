@@ -1,4 +1,5 @@
 /***
+Name: Simulator
 Author: Taffy Cheng
 Date: 2016/03/19
 ***/
@@ -12,7 +13,7 @@ Date: 2016/03/19
 #include "load.h"
 
 static unsigned opcode, funct, shamt, address, temp1, temp2, temp3, temp4, rs, rt, rd;
-static unsigned immediate, signRs, signRt, signRd, signIm, signPos, pos;
+static unsigned immediate, signRs, signRt, signRd, signIm, signPos, signTemp, pos;
 static int intRs, intRt, intIm, temp;
 
 void findOpcode() {
@@ -353,6 +354,10 @@ void run() {
                         break;
                     case BEQ:
                         findSignedImmediate(&immediate);
+                        signRs = reg[rs] >> 31, signRt = (-reg[rt]) >> 31;
+                        signTemp = (reg[rs] - reg[rt]) >> 31;
+                        if (signRs == signRt && signRs != signTemp)
+                            numberOverflow = 1;
                         if (reg[rs] == reg[rt]) {
                             immediate = immediate << 2;
                             PC = PC + 4 + immediate;
@@ -360,6 +365,10 @@ void run() {
                         break;
                     case BNE:
                         findSignedImmediate(&immediate);
+                        signRs = reg[rs] >> 31, signRt = (-reg[rt]) >> 31;
+                        signTemp = (reg[rs] - reg[rt]) >> 31;
+                        if (signRs == signRt && signRs != signTemp)
+                            numberOverflow = 1;
                         if (reg[rs] != reg[rt]) {
                             immediate = immediate << 2;
                             PC = PC + 4 + immediate;
