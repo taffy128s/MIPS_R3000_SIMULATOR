@@ -1,3 +1,8 @@
+/***
+Author: Taffy Cheng
+Date: 2016/03/19
+***/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "global.h"
