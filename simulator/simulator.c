@@ -150,7 +150,7 @@ void run() {
                         break;
                     case SLT:
                         intRs = reg[rs], intRt = reg[rt];
-                        reg[rd] = (intRs < intRt);
+                        reg[rd] = (intRs < intRt) ? 1 : 0;
                         if (rd == 0) {
                             writeToZero = 1;
                             reg[rd] = 0;
