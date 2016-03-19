@@ -1,0 +1,3 @@
+void dumpSnap();
+
+void errorDump();
