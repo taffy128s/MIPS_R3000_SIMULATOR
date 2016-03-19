@@ -351,14 +351,14 @@ void run() {
                         if (reg[rs] == reg[rt]) {
                             immediate = immediate << 2;
                             PC = PC + 4 + immediate;
-                        }
+                        } else PC += 4;
                         break;
                     case BNE:
                         findSignedImmediate(&immediate);
                         if (reg[rs] != reg[rt]) {
                             immediate = immediate << 2;
                             PC = PC + 4 + immediate;
-                        }
+                        } else PC += 4;
                         break;
                     default:
                         findSignedImmediate(&immediate);
@@ -366,7 +366,7 @@ void run() {
                         if (temp > 0) {
                             immediate = immediate << 2;
                             PC = PC + 4 + immediate;
-                        }
+                        } else PC += 4;
                 }
         }
         errorDump();
