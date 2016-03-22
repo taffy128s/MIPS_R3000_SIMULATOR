@@ -218,6 +218,8 @@ void run() {
                         PC += 4;
                         break;
                     case LW:
+                        if (rt == 0)
+                            writeToZero = 1;
                         findSignedImmediate(&immediate);
                         if (findPosByImmediateWithErrorDetection(3)) return;
                         // Misalignment detection is embedded in the findPos function.
@@ -226,13 +228,13 @@ void run() {
                         temp3 = dMemory[pos + 2], temp3 = temp3 << 24 >> 16;
                         temp4 = dMemory[pos + 3], temp4 = temp4 << 24 >> 24;
                         reg[rt] = temp1 + temp2 + temp3 + temp4;
-                        if (rt == 0) {
-                            writeToZero = 1;
+                        if (rt == 0)
                             reg[rt] = 0;
-                        }
                         PC += 4;
                         break;
                     case LH:
+                        if (rt == 0)
+                            writeToZero = 1;
                         findSignedImmediate(&immediate);
                         if (findPosByImmediateWithErrorDetection(1)) return;
                         // Misalignment detection is embedded in the findPos function.
@@ -240,45 +242,43 @@ void run() {
                         temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
                         short shortTemp = temp1 + temp2;
                         reg[rt] = shortTemp;
-                        if (rt == 0) {
-                            writeToZero = 1;
+                        if (rt == 0)
                             reg[rt] = 0;
-                        }
                         PC += 4;
                         break;
                     case LHU:
+                        if (rt == 0)
+                            writeToZero = 1;
                         findSignedImmediate(&immediate);
                         if (findPosByImmediateWithErrorDetection(1)) return;
                         // Misalignment detection is embedded in the findPos function.
                         temp1 = dMemory[pos], temp1 = temp1 << 24 >> 16;
                         temp2 = dMemory[pos + 1], temp2 = temp2 << 24 >> 24;
                         reg[rt] = temp1 + temp2;
-                        if (rt == 0) {
-                            writeToZero = 1;
+                        if (rt == 0)
                             reg[rt] = 0;
-                        }
                         PC += 4;
                         break;
                     case LB:
+                        if (rt == 0)
+                            writeToZero = 1;
                         findSignedImmediate(&immediate);
                         if (findPosByImmediateWithErrorDetection(0)) return;
                         // No need to detect misalignment.
                         reg[rt] = dMemory[pos];
-                        if (rt == 0) {
-                            writeToZero = 1;
+                        if (rt == 0)
                             reg[rt] = 0;
-                        }
                         PC += 4;
                         break;
                     case LBU:
+                        if (rt == 0)
+                            writeToZero = 1;
                         findSignedImmediate(&immediate);
                         if (findPosByImmediateWithErrorDetection(0)) return;
                         // No need to detect misalignment.
                         reg[rt] = dMemory[pos], reg[rt] = reg[rt] << 24 >> 24;
-                        if (rt == 0) {
-                            writeToZero = 1;
+                        if (rt == 0)
                             reg[rt] = 0;
-                        }
                         PC += 4;
                         break;
                     case SW:
