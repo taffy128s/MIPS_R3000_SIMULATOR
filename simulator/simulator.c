@@ -209,7 +209,7 @@ void run() {
                         PC += 4;
                         break;
                     case ADDIU:
-                        findUnsignedImmediate(&immediate);
+                        findSignedImmediate(&immediate);
                         reg[rt] = reg[rs] + immediate;
                         if (rt == 0) {
                             writeToZero = 1;
