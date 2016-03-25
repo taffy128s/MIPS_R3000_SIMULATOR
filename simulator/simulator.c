@@ -21,14 +21,14 @@ void findOpcode() {
     opcode = opcode >> 2 << 26 >> 26;
 }
 
-int findPosByImmediateWithErrorDetection(int gap) {
+int findPosByImmediateWithErrorDetection(unsigned gap) {
     int needToHalt = 0;
     signRs = reg[rs] >> 31, signIm = immediate >> 31;
     pos = reg[rs] + immediate;
     signPos = pos >> 31;
     if (signRs == signIm && signRs != signPos)
         numberOverflow = 1;
-    if (pos + gap >= 1024) {
+    if (pos >= 1024 || pos + gap >= 1024) {
         memoryOverflow = 1;
         needToHalt = 1;
     }
@@ -77,11 +77,9 @@ void run() {
                 findRsRtRd(&rs, &rt, &rd);
                 switch (funct) {
                     case ADD:
-                        //printf("%x %x %x\n", reg[rs], reg[rt], reg[rd]);
                         signRs = reg[rs] >> 31, signRt = reg[rt] >> 31;
                         reg[rd] = reg[rs] + reg[rt];
                         signRd = reg[rd] >> 31;
-                        //printf("%d %d %d %d\n", signRs, signRt, signRd, cycle);
                         if (rd == 0) {
                             writeToZero = 1;
                             reg[rd] = 0;
