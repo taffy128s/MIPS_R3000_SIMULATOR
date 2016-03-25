@@ -23,8 +23,8 @@ void findOpcode() {
 
 int findPosByImmediateWithErrorDetection(int gap) {
     int needToHalt = 0;
-    pos = reg[rs] + immediate;
     signRs = reg[rs] >> 31, signIm = immediate >> 31;
+    pos = reg[rs] + immediate;
     signPos = pos >> 31;
     if (signRs == signIm && signRs != signPos)
         numberOverflow = 1;
@@ -77,13 +77,15 @@ void run() {
                 findRsRtRd(&rs, &rt, &rd);
                 switch (funct) {
                     case ADD:
+                        //printf("%x %x %x\n", reg[rs], reg[rt], reg[rd]);
+                        signRs = reg[rs] >> 31, signRt = reg[rt] >> 31;
                         reg[rd] = reg[rs] + reg[rt];
+                        signRd = reg[rd] >> 31;
+                        //printf("%d %d %d %d\n", signRs, signRt, signRd, cycle);
                         if (rd == 0) {
                             writeToZero = 1;
                             reg[rd] = 0;
                         }
-                        signRs = reg[rs] >> 31, signRt = reg[rt] >> 31;
-                        signRd = reg[rd] >> 31;
                         if (signRs == signRt && signRs != signRd)
                             numberOverflow = 1;
                         PC += 4;
@@ -97,13 +99,13 @@ void run() {
                         PC += 4;
                         break;
                     case SUB:
+                        signRs = reg[rs] >> 31, signRt = (-reg[rt]) >> 31;
                         reg[rd] = reg[rs] - reg[rt];
+                        signRd = reg[rd] >> 31;
                         if (rd == 0) {
                             writeToZero = 1;
                             reg[rd] = 0;
                         }
-                        signRs = reg[rs] >> 31, signRt = (-reg[rt]) >> 31;
-                        signRd = reg[rd] >> 31;
                         if (signRs == signRt && signRs != signRd)
                             numberOverflow = 1;
                         PC += 4;
@@ -197,13 +199,13 @@ void run() {
                 switch (opcode) {
                     case ADDI:
                         findSignedImmediate(&immediate);
+                        signRs = reg[rs] >> 31, signIm = immediate >> 31;
                         reg[rt] = reg[rs] + immediate;
+                        signRt = reg[rt] >> 31;
                         if (rt == 0) {
                             writeToZero = 1;
                             reg[rt] = 0;
                         }
-                        signRs = reg[rs] >> 31, signIm = immediate >> 31;
-                        signRt = reg[rt] >> 31;
                         if (signRs == signIm && signRs != signRt)
                             numberOverflow = 1;
                         PC += 4;
